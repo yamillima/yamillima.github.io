@@ -3,7 +3,7 @@ self.addEventListener('push', function(event) {
       body: event.data.text(),
       icon: '/icono.png',
       badge: '/badge.png',
-      data: { url: 'https://github.com' } // Agrega la URL o cualquier dato necesario
+      data: { url: event.data.json().url } // Agrega la URL o cualquier dato necesario
     };
     event.waitUntil(
       self.registration.showNotification('Título de la Notificación', options)
