@@ -16,7 +16,7 @@ self.addEventListener('notificationclick', function(event) {
   // Abre una nueva ventana o pestaña con la URL especificada en la notificación
   console.log(event.notification.data);
   console.log(event.notification.data.url);
-  const url = event.notification.data && event.notification.data.url ? event.notificacion.data.url : 'https://github.com';
+  const url = event.notification.data && event.notification.data.url ? event.notification.data.url : 'https://github.com';
   if (url) { 
     event.waitUntil(      
       clients.openWindow(url)
