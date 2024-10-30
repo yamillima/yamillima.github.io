@@ -14,7 +14,12 @@ self.addEventListener('notificationclick', function(event) {
   event.notification.close(); // Cierra la notificación
   
   // Abre una nueva ventana o pestaña con la URL especificada en la notificación
-  event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+  const url = event.notification.data && event.notification.data.url;
+  if (url) { 
+    event.waitUntil(      
+      clients.openWindow(url)
   );
+  } else {
+      console.log('No se encontró la url en la data de la notificación');
+  }
 });
