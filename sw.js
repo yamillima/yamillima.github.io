@@ -1,8 +1,9 @@
 self.addEventListener('push', function(event) {
     const options = {
       body: event.data.text(),
-      icon: '/icono.png',
-      badge: '/badge.png',
+      icon: 'https://img.icons8.com/?size=100&id=4Pf07kGssW9W&format=png&color=000000',
+      badge: 'https://img.icons8.com/?size=100&id=38583&format=png&color=40C057',
+      image: 'https://casanarino.presidencia.gov.co/img/hero.png',
       data: {url : 'https://github.com'} // Agrega la URL o cualquier dato necesario
     };
     event.waitUntil(
