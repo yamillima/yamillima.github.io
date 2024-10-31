@@ -5,9 +5,9 @@ self.addEventListener('push', function(event) {
       badge: '/badge.png',
       data: event.data ? event.data.json() : {} // Agrega la URL o cualquier dato necesario
     };
+    console.log(event.data || 'No se envió data desde el frontend');
+    console.log(event.data.url || 'No se envió url de destino desde el frontend');
     event.waitUntil(
-      console.log(event.data || 'No se envió data desde el frontend');
-      console.log(event.data.url || 'No se envió url de destino desde el frontend');
       self.registration.showNotification('Título de la Notificación', options)
     );
   });
