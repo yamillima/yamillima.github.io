@@ -33,7 +33,9 @@ function enviarNotificacion() {
     navigator.serviceWorker.getRegistration().then(function(reg) {
       reg.showNotification('Título de la Notificación', {
         body: 'Este es el cuerpo de la notificación',
-        icon: '/icono.png'
+        icon: 'https://casanarino.presidencia.gov.co/img/hero.png',
+        badge: 'https://casanarino.presidencia.gov.co/img/hero.png',
+        image: 'https://casanarino.presidencia.gov.co/img/hero.png'
       });
     });
   }
