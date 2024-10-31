@@ -41,7 +41,8 @@ function enviarNotificacion() {
         icon: 'https://casanarino.presidencia.gov.co/img/hero.png',
         badge: newBadge,
         image: 'https://casanarino.presidencia.gov.co/img/hero.png',
-        data: { url : newUrl }
+        data: { url : newUrl },
+        actions: [{action: 'Open', title: '⤻ Abrir'}]
       });
     });
   }
