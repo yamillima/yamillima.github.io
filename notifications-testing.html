@@ -2,7 +2,8 @@
 <head></head>
 <body>
 <h1 onclick="solicitarPermisoNotificaciones();">Solicitar Permiso de Notificaciones</h1>
-<input id="urlInput" type="url" placeholder="Inserta URL">
+<input id="badgeSrcInput" type="url" placeholder="Inserta URL del badge">
+<input id="urlInput" type="url" placeholder="Inserta URL objetivo">
 <h1 onclick="enviarNotificacion();">Enviar Notificación</h1>
 
 <script>
@@ -30,6 +31,7 @@ function solicitarPermisoNotificaciones() {
 
 // Enviar una notificación
 function enviarNotificacion() {
+  let newBadge = document.getElementById('badgeSrcInput').value;
   let newUrl = document.getElementById('urlInput').value;
   console.log(newUrl);
   if (Notification.permission === 'granted') {
@@ -37,7 +39,7 @@ function enviarNotificacion() {
       reg.showNotification('Título de la Notificación', {
         body: 'Este es el cuerpo de la notificación',
         icon: 'https://casanarino.presidencia.gov.co/img/hero.png',
-        badge: 'yamil-favicon.png',
+        badge: newBadge,
         image: 'https://casanarino.presidencia.gov.co/img/hero.png',
         data: { url : newUrl }
       });
