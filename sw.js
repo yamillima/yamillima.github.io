@@ -13,7 +13,7 @@ self.addEventListener('push', function(event) {
  
 self.addEventListener('notificationclick', function(event) {
   event.notification.close(); // Cierra la notificación
-  
+
   // Abre una nueva ventana o pestaña con la URL especificada en la notificación
   let url = 'https://github.com';
   try {
@@ -21,6 +21,9 @@ self.addEventListener('notificationclick', function(event) {
     console.log(url);
   } catch (error) {
     console.error(error)
+  }
+  if (event.action === 'Open') {
+      clients.openWindos(url)
   }
   event.waitUntil(      
     clients.openWindow(url)
