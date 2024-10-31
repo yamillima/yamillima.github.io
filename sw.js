@@ -23,9 +23,12 @@ self.addEventListener('notificationclick', function(event) {
     console.error(error)
   }
   if (event.action === 'Open') {
+    event.waitUntil(
       clients.openWindow(url)
+    );
+  } else {
+    event.waitUntil(
+      clients.openWindow(url)
+    );
   }
-  event.waitUntil(      
-    clients.openWindow(url)
-  );
 });
