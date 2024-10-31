@@ -23,7 +23,7 @@ self.addEventListener('notificationclick', function(event) {
     console.error(error)
   }
   if (event.action === 'Open') {
-      clients.openWindos(url)
+      clients.openWindow(url)
   }
   event.waitUntil(      
     clients.openWindow(url)
