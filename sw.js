@@ -28,7 +28,7 @@ self.addEventListener('notificationclick', function(event) {
     );
   } else {
     event.waitUntil(
-      clients.openWindow(url)
+      clients.openWindow('https://github.com')
     );
   }
 });
