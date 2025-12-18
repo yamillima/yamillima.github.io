@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>¡Guía Lista!</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* 1. Base: Fondo gris y centrado total */
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f0f2f5; 
+            color: #1c1e21;
+            margin: 0;
+            padding: 0; 
+            min-height: 100vh;
+            display: flex;
+            align-items: center; 
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        /* 2. Contenedor: Se ajusta al ancho del libro */
+        .container {
+    background: white;      
+    margin: 0 auto;
+    /* 1. Aumenta el segundo valor (el espacio lateral) de 15px a 40px o 50px */
+    padding: 25px 33px; 
+    
+    border-radius: 12px; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+    box-sizing: border-box;
+    text-align: center;
+    display: table; 
+    width: auto;
+    
+    /* 2. Agrega un ancho mínimo para asegurar que la tarjeta se ensanche */
+    min-width: 320px; 
+}
+
+        h1 { 
+            font-size: 1.3rem; /* Ligeramente más pequeño para optimizar espacio */
+            margin: 0 0 15px 0; 
+            line-height: 1.2;
+            color: #000;
+        }
+
+        /* 3. Portada: Máximo tamaño vertical seguro */
+        .book-cover {
+            display: block;
+            margin: 0 auto 20px auto;
+            width: auto;
+            max-width: 380px; 
+            /* Al quitar el footer, podemos subir a 55vh para que el libro sea gigante */
+            max-height: 68vh; 
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .book-cover:hover { 
+            transform: scale(1.02) rotate(-2deg);
+        }
+
+        /* 4. Botón: Ancho exacto del libro */
+        .btn { 
+            display: block;
+            width: 100%; 
+            padding: 16px 0; 
+            background-color: #007bff;
+            color: white; 
+            text-decoration: none; 
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.1rem; 
+            cursor: pointer; 
+            box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+            transition: background-color 0.2s, transform 0.2s;
+            border: none;
+            box-sizing: border-box;
+        }
+
+        .btn:hover { 
+            background-color: #0056b3; 
+            transform: translateY(-2px);
+        }
+    </style>
+    
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const leadID = urlParams.get('id'); 
+        const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbzjjJu1Zg3vM5RRt969pAjs0wpOH5eWANgKfMuxgdUt8qG2jCxv_xAPE2jyiXGlqa1l0Q/exec'; 
+        const pdfUrl = 'https://yamillima.github.io/guia/patron-viral.pdf'; 
+
+        function trackEvent(eventType) {
+            if (!leadID) return Promise.resolve();
+            const trackingUrl = `${appsScriptUrl}?id=${leadID}&agent=${navigator.userAgent}&event_type=${eventType}`;
+            return fetch(trackingUrl, { method: 'GET', mode: 'no-cors' }).catch(e => console.error(e));
+        }
+        
+        window.onload = function() { trackEvent('Email Click (View)'); };
+
+        function trackDownloadAndRedirect(event) {
+            event.preventDefault(); 
+            trackEvent('PDF Download Click').finally(() => {
+                window.location.href = pdfUrl;
+            });
+        }
+    </script>
+</head>
+<body>
+
+    <div class="container">        
+        <img src="primera-pagina-portada-guia-el-protocolo-caballo-de-troya-v3.png" 
+             alt="Portada Guía" 
+             class="book-cover" 
+             onclick="trackDownloadAndRedirect(event)">
+        
+        <a href="#" class="btn" onclick="trackDownloadAndRedirect(event)">
+            DESCARGAR GUÍA (PDF)
+        </a>
+    </div>
+
+</body>
+</html>
