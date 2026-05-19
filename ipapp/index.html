@@ -9,7 +9,7 @@
             margin: 0;
             background-color: #333;
             display: flex;
-            flex-direction: column; /* Permite alinear el contenedor y el botón verticalmente */
+            flex-direction: column; 
             justify-content: center;
             align-items: center;
             height: 100vh;
@@ -34,7 +34,12 @@
             width: 400px;
             height: 200px;
             object-fit: cover; 
-            z-index: 1; /* Capa inferior */
+            z-index: 1; 
+        }
+
+        /* Efecto espejo sutil solo cuando se usa la cámara frontal (selfie) */
+        video.selfie {
+            transform: scaleX(-1);
         }
 
         /* La imagen cubre todo el contenedor de 400x400 */
@@ -44,30 +49,45 @@
             left: 0;
             width: 400px;
             height: 400px;
-            z-index: 2; /* Capa superior */
+            z-index: 2; 
             pointer-events: none;
         }
 
-        /* Botón de captura y descarga */
-        #btn-descargar {
+        /* Contenedor para la botonera inferior */
+        .botones-container {
             margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        button {
             padding: 12px 24px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             color: #fff;
-            background-color: #0084ff; /* Azul estilo Facebook */
             border: none;
             border-radius: 8px;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             transition: background-color 0.2s, transform 0.1s;
-            z-index: 10;
         }
 
-        #btn-descargar:active {
-            background-color: #0066cc;
+        button:active {
             transform: scale(0.98);
         }
+
+        /* Botón de captura y descarga (Azul Facebook) */
+        #btn-descargar {
+            background-color: #0084ff;
+        }
+        #btn-descargar:hover { background-color: #0066cc; }
+
+        /* Botón para rotar cámara (Gris/Transparente oscuro) */
+        #btn-cambiar-camara {
+            background-color: #555;
+        }
+        #btn-cambiar-camara:hover { background-color: #444; }
     </style>
 </head>
 <body>
@@ -77,36 +97,66 @@
         <img id="imagen-superpuesta" src="facebook-profile-1.png" alt="Superposición">
     </div>
 
-    <button id="btn-descargar">Descargar Imagen</button>
+    <div class="botones-container">
+        <button id="btn-cambiar-camara">🔄 Voltear Cámara</button>
+        <button id="btn-descargar">Descargar Foto</button>
+    </div>
 
     <script>
         const video = document.getElementById('video-feed');
         const img = document.getElementById('imagen-superpuesta');
         const btnDescargar = document.getElementById('btn-descargar');
+        const btnCambiarCamara = document.getElementById('btn-cambiar-camara');
 
-        // Guardaremos una copia del canvas procesado con transparencia para la fusión final
         let canvasLogosProcesados = null;
+        
+        // Control del estado de la cámara: "environment" (trasera) o "user" (frontal)
+        let currentFacingMode = "environment"; 
+        let currentStream = null;
 
-        async function startCamera() {
+        async function startCamera(facingMode) {
+            // 1. Si ya hay un flujo activo, detenemos todos sus tracks antes de pedir uno nuevo
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
+                const constraints = { 
                     video: { 
-                        facingMode: { ideal: "environment" },
+                        facingMode: { exact: facingMode }, // 'exact' fuerza al navegador a usar la solicitada
                         width: { ideal: 640 },
                         height: { ideal: 480 }
                     } 
-                });
+                };
+                
+                // Intento con 'exact', si falla (como en desktops con una sola webcam), saca fallback a ideal
+                let stream;
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch(e) {
+                    constraints.video.facingMode = { ideal: facingMode };
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                }
+
+                currentStream = stream;
                 video.srcObject = stream;
+
+                // Aplicar o remover efecto espejo (CSS) si es la cámara frontal para que se sienta natural al usuario
+                if (facingMode === "user") {
+                    video.classList.add('selfie');
+                } else {
+                    video.classList.remove('selfie');
+                }
+
             } catch (err) {
                 console.error("Error al acceder a la cámara:", err);
-                alert("Asegúrate de otorgar permisos y usar localhost/https.");
+                alert("No se pudo alternar a esa cámara en este dispositivo.");
             }
         }
 
         function applyChromaKey() {
             if (!img.complete || img.naturalWidth === 0) return;
 
-            // Guardamos el canvas en la variable global para usarlo en la descarga
             canvasLogosProcesados = document.createElement('canvas');
             const ctx = canvasLogosProcesados.getContext('2d');
             canvasLogosProcesados.width = img.naturalWidth;
@@ -133,32 +183,23 @@
 
                 ctx.putImageData(imageData, 0, 0);
                 img.src = canvasLogosProcesados.toDataURL(); 
-                console.log("Croma magenta aplicado con éxito.");
             } catch (e) {
-                console.error("Error de CORS o procesamiento.", e);
+                console.error("Error de procesamiento cromático.", e);
             }
         }
 
-        // --- FUNCIÓN NUEVA: Captura, Fusión y Descarga ---
         function descargarComposicion() {
-            if (!canvasLogosProcesados) {
-                alert("La imagen aún no se ha procesado.");
-                return;
-            }
+            if (!canvasLogosProcesados) return;
 
-            // Crear el lienzo definitivo de 400x400 píxeles nativos
             const canvasFinal = document.createElement('canvas');
             const ctxFinal = canvasFinal.getContext('2d');
             canvasFinal.width = 400;
             canvasFinal.height = 400;
 
-            // 1. Capturar el cuadro actual de la cámara (mitad superior: 400x200)
-            // Usamos object-fit manual para simular el comportamiento 'cover' del CSS
             const videoWidth = video.videoWidth;
             const videoHeight = video.videoHeight;
             
             if (videoWidth > 0 && videoHeight > 0) {
-                // Calcular proporciones para el recorte tipo cover en el área 400x200
                 const targetWidth = 400;
                 const targetHeight = 200;
                 const videoAspect = videoWidth / videoHeight;
@@ -174,18 +215,26 @@
                     sourceY = (videoHeight - sourceHeight) / 2;
                 }
 
-                // Dibujar la cámara estrictamente en la mitad superior (0, 0, 400, 200)
+                // Guardar estado del contexto del Canvas por si hay que aplicar el espejo
+                ctxFinal.save();
+
+                if (currentFacingMode === "user") {
+                    // Si es modo selfie, invertimos horizontalmente el lienzo de la cámara para que la foto guardada coincida con lo que el usuario ve en pantalla
+                    ctxFinal.translate(targetWidth, 0);
+                    ctxFinal.scale(-1, 1);
+                }
+
                 ctxFinal.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+                
+                // Restaurar el contexto (quitar inversión) para pintar correctamente la capa estática de logos
+                ctxFinal.restore();
             } else {
-                // Fallback si el video no ha inicializado dimensiones internas todavía
                 ctxFinal.fillStyle = "#000";
                 ctxFinal.fillRect(0, 0, 400, 200);
             }
 
-            // 2. Estampar la capa de logos encima, escalándola exactamente a 400x400
             ctxFinal.drawImage(canvasLogosProcesados, 0, 0, canvasLogosProcesados.width, canvasLogosProcesados.height, 0, 0, 400, 400);
 
-            // 3. Convertir a imagen y forzar la descarga en el navegador / celular
             try {
                 const dataUrl = canvasFinal.toDataURL("image/png");
                 const link = document.createElement('a');
@@ -193,14 +242,22 @@
                 link.href = dataUrl;
                 link.click();
             } catch (err) {
-                console.error("Error al exportar la imagen final:", err);
-                alert("Hubo un problema al generar el archivo de descarga.");
+                console.error("Error al exportar:", err);
             }
         }
 
-        // Eventos
-        startCamera();
+        // --- FUNCIÓN NUEVA: Alternar Estado ---
+        function alternarCamara() {
+            // Cambiamos el modo lógicamente
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            // Reiniciamos el hardware con la nueva restricción
+            startCamera(currentFacingMode);
+        }
+
+        // Eventos y ciclos de arranque
+        startCamera(currentFacingMode);
         btnDescargar.addEventListener('click', descargarComposicion);
+        btnCambiarCamara.addEventListener('click', alternarCamara);
 
         if (img.complete) {
             applyChromaKey();
