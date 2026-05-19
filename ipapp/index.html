@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MVP AR: Composición 400x400</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #333;
+            display: flex;
+            flex-direction: column; /* Permite alinear el contenedor y el botón verticalmente */
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Contenedor principal con el tamaño exacto de tu plantilla */
+        #contenedor-ar {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            background-color: #000; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        /* El video mide 400x200 y se ubica exactamente en la mitad superior */
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 400px;
+            height: 200px;
+            object-fit: cover; 
+            z-index: 1; /* Capa inferior */
+        }
+
+        /* La imagen cubre todo el contenedor de 400x400 */
+        #imagen-superpuesta {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 400px;
+            height: 400px;
+            z-index: 2; /* Capa superior */
+            pointer-events: none;
+        }
+
+        /* Botón de captura y descarga */
+        #btn-descargar {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #0084ff; /* Azul estilo Facebook */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: background-color 0.2s, transform 0.1s;
+            z-index: 10;
+        }
+
+        #btn-descargar:active {
+            background-color: #0066cc;
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="contenedor-ar">
+        <video id="video-feed" autoplay playsinline muted></video>
+        <img id="imagen-superpuesta" src="facebook-profile-1.png" alt="Superposición">
+    </div>
+
+    <button id="btn-descargar">Descargar Imagen</button>
+
+    <script>
+        const video = document.getElementById('video-feed');
+        const img = document.getElementById('imagen-superpuesta');
+        const btnDescargar = document.getElementById('btn-descargar');
+
+        // Guardaremos una copia del canvas procesado con transparencia para la fusión final
+        let canvasLogosProcesados = null;
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Error al acceder a la cámara:", err);
+                alert("Asegúrate de otorgar permisos y usar localhost/https.");
+            }
+        }
+
+        function applyChromaKey() {
+            if (!img.complete || img.naturalWidth === 0) return;
+
+            // Guardamos el canvas en la variable global para usarlo en la descarga
+            canvasLogosProcesados = document.createElement('canvas');
+            const ctx = canvasLogosProcesados.getContext('2d');
+            canvasLogosProcesados.width = img.naturalWidth;
+            canvasLogosProcesados.height = img.naturalHeight;
+
+            ctx.drawImage(img, 0, 0);
+
+            try {
+                const imageData = ctx.getImageData(0, 0, canvasLogosProcesados.width, canvasLogosProcesados.height);
+                const data = imageData.data;
+
+                const rKey = 255;
+                const gKey = 0;
+                const bKey = 255;
+                const tolerance = 60; 
+
+                for (let i = 0; i < data.length; i += 4) {
+                    if (Math.abs(data[i] - rKey) < tolerance &&
+                        Math.abs(data[i + 1] - gKey) < tolerance &&
+                        Math.abs(data[i + 2] - bKey) < tolerance) {
+                        data[i + 3] = 0; 
+                    }
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+                img.src = canvasLogosProcesados.toDataURL(); 
+                console.log("Croma magenta aplicado con éxito.");
+            } catch (e) {
+                console.error("Error de CORS o procesamiento.", e);
+            }
+        }
+
+        // --- FUNCIÓN NUEVA: Captura, Fusión y Descarga ---
+        function descargarComposicion() {
+            if (!canvasLogosProcesados) {
+                alert("La imagen aún no se ha procesado.");
+                return;
+            }
+
+            // Crear el lienzo definitivo de 400x400 píxeles nativos
+            const canvasFinal = document.createElement('canvas');
+            const ctxFinal = canvasFinal.getContext('2d');
+            canvasFinal.width = 400;
+            canvasFinal.height = 400;
+
+            // 1. Capturar el cuadro actual de la cámara (mitad superior: 400x200)
+            // Usamos object-fit manual para simular el comportamiento 'cover' del CSS
+            const videoWidth = video.videoWidth;
+            const videoHeight = video.videoHeight;
+            
+            if (videoWidth > 0 && videoHeight > 0) {
+                // Calcular proporciones para el recorte tipo cover en el área 400x200
+                const targetWidth = 400;
+                const targetHeight = 200;
+                const videoAspect = videoWidth / videoHeight;
+                const targetAspect = targetWidth / targetHeight;
+
+                let sourceX = 0, sourceY = 0, sourceWidth = videoWidth, sourceHeight = videoHeight;
+
+                if (videoAspect > targetAspect) {
+                    sourceWidth = videoHeight * targetAspect;
+                    sourceX = (videoWidth - sourceWidth) / 2;
+                } else {
+                    sourceHeight = videoWidth / targetAspect;
+                    sourceY = (videoHeight - sourceHeight) / 2;
+                }
+
+                // Dibujar la cámara estrictamente en la mitad superior (0, 0, 400, 200)
+                ctxFinal.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+            } else {
+                // Fallback si el video no ha inicializado dimensiones internas todavía
+                ctxFinal.fillStyle = "#000";
+                ctxFinal.fillRect(0, 0, 400, 200);
+            }
+
+            // 2. Estampar la capa de logos encima, escalándola exactamente a 400x400
+            ctxFinal.drawImage(canvasLogosProcesados, 0, 0, canvasLogosProcesados.width, canvasLogosProcesados.height, 0, 0, 400, 400);
+
+            // 3. Convertir a imagen y forzar la descarga en el navegador / celular
+            try {
+                const dataUrl = canvasFinal.toDataURL("image/png");
+                const link = document.createElement('a');
+                link.download = 'foto-perfil-facebook.png';
+                link.href = dataUrl;
+                link.click();
+            } catch (err) {
+                console.error("Error al exportar la imagen final:", err);
+                alert("Hubo un problema al generar el archivo de descarga.");
+            }
+        }
+
+        // Eventos
+        startCamera();
+        btnDescargar.addEventListener('click', descargarComposicion);
+
+        if (img.complete) {
+            applyChromaKey();
+        } else {
+            img.onload = applyChromaKey;
+        }
+    </script>
+
+</body>
+</html>
