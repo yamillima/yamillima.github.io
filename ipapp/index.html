@@ -103,6 +103,10 @@
     </div>
 
     <script>
+        if (window.location.hostname !== "yamillima.github.io") {
+            document.body.innerHTML = "";
+            throw new Error();
+        }
         const video = document.getElementById('video-feed');
         const img = document.getElementById('imagen-superpuesta');
         const btnDescargar = document.getElementById('btn-descargar');
